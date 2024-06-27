@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Page</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            height: 100vh;
+            width: 70vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 600px;
+            margin-bottom: 20px;
+        }
+        .profile-header {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        img {
+            border-radius: 50%;
+            margin: 10px 0;
+            width: 100px;
+            height: 100px;
+        }
+        button, .post-button {
+            padding: 10px;
+            background-color: #007BFF;
+            border: none;
+            color: white;
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        button:hover, .post-button:hover {
+            background-color: #0056b3;
+        }
+        .info, .posts, .post-form {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        .post-form textarea {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .post {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+            box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        }
+        .post h4 {
+            margin: 0;
+            font-size: 16px;
+        }
+        .post p {
+            margin: 10px 0;
+        }
+        .post-actions {
+            display: flex;
+            justify-content: space-between;
+        }
+        .post-actions button {
+            background: none;
+            border: none;
+            color: #007BFF;
+            cursor: pointer;
+        }
+        .post-actions button:hover {
+            text-decoration: underline;
+        }
+        footer {
+            text-align: center;
+            margin-top: auto;
+            padding: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="profile-header">
+            <img id="profile-photo" src="" alt="Profile Photo">
+            <h2 id="profile-name"></h2>
+            <button onclick="logout()">Logout</button>
+        </div>
+        <div class="info">
+            <h3>About Me</h3>
+            <p id="profile-age"></p>
+            <p id="profile-username"></p>
+        </div>
+        <div class="post-form">
+            <h3>Create a Post</h3>
+            <textarea id="post-content" rows="4" placeholder="What's on your mind?"></textarea>
+            <button class="post-button" onclick="createPost()">Post</button>
+        </div>
+        <div class="posts">
+            <h3>Posts</h3>
+            <div id="posts-container"></div>
+        </div>
+    </div>
+    <footer>
+        <p>&copy; 2024 We 18 Leoes</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const username = localStorage.getItem('loggedInUser');
+            if (username) {
+                const userData = JSON.parse(localStorage.getItem(username));
+                if (userData) {
+                    document.getElementById('profile-name').innerText = userData.name;
+                    document.getElementById('profile-photo').src = userData.photo;
+                    document.getElementById('profile-age').innerText = `Age: ${userData.age}`;
+                    document.getElementById('profile-username').innerText = `Username: ${userData.username}`;
+                    loadPosts();
+                } else {
+                    alert('User data not found.');
+                    window.location.href = 'login.html';
+                }
+            } else {
+                alert('Not logged in.');
+                window.location.href = 'login.html';
+            }
+        });
+
+        function logout() {
+            localStorage.removeItem('loggedInUser');
+            window.location.href = 'login.html';
+        }
+
+        function createPost() {
+            const content = document.getElementById('post-content').value;
+            if (content) {
+                const username = localStorage.getItem('loggedInUser');
+                const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+                const newPost = {
+                    username,
+                    content,
+                    likes: 0,
+                    id: Date.now(),
+                    comments: []
+                };
+                posts.push(newPost);
+                localStorage.setItem('posts', JSON.stringify(posts));
+                document.getElementById('post-content').value = '';
+                loadPosts();
+            } else {
+                alert('Post content cannot be empty.');
+            }
+        }
+
+        function loadPosts() {
+            const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+            const postsContainer = document.getElementById('posts-container');
+            postsContainer.innerHTML = '';
+            posts.forEach(post => {
+                const postElement = document.createElement('div');
+                postElement.classList.add('post');
+                postElement.innerHTML = `
+                    <h4>${post.username}</h4>
+                    <p>${post.content}</p>
+                    <div class="post-actions">
+                        <button onclick="likePost(${post.id})">Like (${post.likes})</button>
+                        <button onclick="commentPost(${post.id})">Comment</button>
+                        <button onclick="sharePost(${post.id})">Share</button>
+                    </div>
+                    <div id="comments-${post.id}"></div>
+                `;
+                postsContainer.appendChild(postElement);
+            });
+        }
+
+        function likePost(id) {
+            const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+            const post = posts.find(p => p.id === id);
+            post.likes++;
+            localStorage.setItem('posts', JSON.stringify(posts));
+            loadPosts();
+        }
+
+        function commentPost(id) {
+            const comment = prompt('Enter your comment:');
+            if (comment) {
+                const posts = JSON.parse(localStorage.getItem('posts') || '[]');
+                const post = posts.find(p => p.id === id);
+                post.comments.push(comment);
+                localStorage.setItem('posts', JSON.stringify(posts));
+                loadPosts();
+            }
+        }
+
+        function sharePost(id) {
+            alert('Post shared!');
+        }
+    </script>
+</body>
+</html>
